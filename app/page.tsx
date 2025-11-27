@@ -5,6 +5,9 @@ import { Header } from "./components/layout/header";
 import { ChatContainer, EmptyState, ChatInput } from "./features/chat";
 import { useChat } from "./features/chat/hooks";
 
+/** 检测是否为静态导出模式（无 API 可用时自动启用模拟模式） */
+const isStaticExport = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true";
+
 /**
  * 首页 - 主聊天界面
  * 
@@ -15,7 +18,9 @@ import { useChat } from "./features/chat/hooks";
  * - 新建对话
  */
 export default function HomePage() {
-  const { messages, isLoading, sendMessage, clearMessages } = useChat();
+  const { messages, isLoading, sendMessage, clearMessages } = useChat({
+    mockMode: isStaticExport,
+  });
 
   const hasMessages = messages.length > 0;
 

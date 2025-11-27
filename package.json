@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "export": "mv app/api app/_api_backup 2>/dev/null; NEXT_EXPORT=true NEXT_PUBLIC_STATIC_EXPORT=true next build; mv app/_api_backup app/api 2>/dev/null || true",
+    "export:win": "move app\\api app\\_api_backup 2>nul & set NEXT_EXPORT=true && set NEXT_PUBLIC_STATIC_EXPORT=true && next build & move app\\_api_backup app\\api 2>nul",
+    "preview": "npx serve out"
   },
   "dependencies": {
     "next": "15.0.3",

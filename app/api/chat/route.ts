@@ -6,6 +6,8 @@ import type { ChatRequest, ChatResponse } from "@/app/features/chat/types";
  * POST /api/chat
  * 
  * 模拟 AI 响应，实际项目中可接入 OpenAI、Claude 等 LLM API
+ * 
+ * 注意：静态导出模式下此 API 不可用，前端会自动使用 mockMode
  */
 export async function POST(request: Request): Promise<NextResponse<ChatResponse>> {
   try {
@@ -59,8 +61,6 @@ export async function POST(request: Request): Promise<NextResponse<ChatResponse>
  * 实际项目中替换为真实 LLM API 调用
  */
 function generateResponse(userMessage: string): string {
-  const messageLength = userMessage.length;
-  
   // 根据用户输入长度和内容生成不同类型的响应
   if (userMessage.includes("代码") || userMessage.includes("编程") || userMessage.includes("React")) {
     return `很棒的技术问题！让我来帮你分析一下 🔧
@@ -94,7 +94,7 @@ ${userMessage.includes("诗") ? `
 你想要我从哪个角度开始呢？`}`;
   }
 
-  if (messageLength < 10) {
+  if (userMessage.length < 10) {
     return `收到！你说的是「${userMessage}」。能告诉我更多细节吗？这样我可以更好地帮助你 😊`;
   }
 
