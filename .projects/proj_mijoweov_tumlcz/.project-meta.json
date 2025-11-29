@@ -1,0 +1,9 @@
+{
+  "id": "proj_mijoweov_tumlcz",
+  "name": "app_proj_mijoweov_tumlcz",
+  "path": "/Users/yangzhou/AiProject/auto_app3/.projects/proj_mijoweov_tumlcz",
+  "status": "error",
+  "createdAt": "2025-11-29T02:46:12.329Z",
+  "updatedAt": "2025-11-29T02:46:12.332Z",
+  "error": "未配置 GEMINI_API_KEY 环境变量"
+}

@@ -1,6 +1,13 @@
-// Chat 组件导出
+/**
+ * Chat 组件导出
+ */
+
+// 原始组件
+export { ChatContainer, EmptyState } from "./chat-container";
 export { ChatMessage, TypingIndicator } from "./chat-message";
 export { ChatInput } from "./chat-input";
-export { ChatContainer, EmptyState } from "./chat-container";
 
-
+// Agent 增强组件
+export { ChatInputWithImage } from "./chat-input-with-image";
+export { AgentChatMessage, AgentTypingIndicator } from "./agent-message";
+export { AgentContainer, AgentEmptyState } from "./agent-container";

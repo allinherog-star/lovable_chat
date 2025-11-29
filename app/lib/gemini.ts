@@ -1,0 +1,427 @@
+/**
+ * Gemini API 集成模块
+ * 接入 gemini-2.5-pro-preview 模型
+ */
+
+import { AgentAction } from "./agent-types";
+import { ProxyAgent, fetch as undiciFetch } from "undici";
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const GEMINI_MODEL = "gemini-2.5-pro-preview-05-06";
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
+// 代理配置 - 支持环境变量 HTTPS_PROXY 或 HTTP_PROXY
+const PROXY_URL = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy || "";
+
+/** Gemini 消息格式 */
+interface GeminiMessage {
+  role: "user" | "model";
+  parts: GeminiPart[];
+}
+
+type GeminiPart = { text: string } | { inlineData: { mimeType: string; data: string } };
+
+/** Gemini 请求体 */
+interface GeminiRequest {
+  contents: GeminiMessage[];
+  generationConfig?: {
+    temperature?: number;
+    topP?: number;
+    topK?: number;
+    maxOutputTokens?: number;
+  };
+  systemInstruction?: {
+    parts: { text: string }[];
+  };
+}
+
+/** Gemini 响应体 */
+interface GeminiResponse {
+  candidates?: {
+    content: {
+      parts: { text: string }[];
+      role: string;
+    };
+    finishReason: string;
+  }[];
+  error?: {
+    code: number;
+    message: string;
+    status: string;
+  };
+}
+
+/** Agent 系统提示词 */
+const AGENT_SYSTEM_PROMPT = `你是一个专业的全栈开发 AI Agent，类似于 Cursor AI。你的任务是帮助用户创建完整的 Web 应用程序。
+
+## 你的能力
+
+1. **创建文件** - 你可以创建任何类型的文件（HTML、CSS、JavaScript、TypeScript、React 组件等）
+2. **修改文件** - 你可以读取和修改现有文件
+3. **执行命令** - 你可以执行 shell 命令来安装依赖、构建项目等
+4. **分析图片** - 你可以分析用户发送的截图，理解 UI 设计并实现它
+5. **修复错误** - 你可以分析错误信息并修复代码问题
+
+## 响应格式
+
+你必须以 JSON 格式响应，包含以下结构：
+
+\`\`\`json
+{
+  "thinking": "你的思考过程，分析用户需求",
+  "actions": [
+    {
+      "type": "create_file",
+      "path": "文件相对路径",
+      "content": "文件完整内容"
+    },
+    {
+      "type": "modify_file",
+      "path": "文件路径",
+      "content": "新的完整文件内容"
+    },
+    {
+      "type": "execute_command",
+      "command": "要执行的命令"
+    },
+    {
+      "type": "delete_file",
+      "path": "要删除的文件路径"
+    }
+  ],
+  "message": "给用户的友好消息，解释你做了什么",
+  "completed": true/false,
+  "needsMoreInfo": false
+}
+\`\`\`
+
+## 重要规则
+
+1. **始终创建完整的项目结构**：包括 package.json、必要的配置文件、源代码文件等
+2. **使用现代技术栈**：优先使用 React + Vite + TypeScript + Tailwind CSS
+3. **代码质量**：生成高质量、可运行的代码，带有适当的注释
+4. **美观的 UI**：创建现代、美观的用户界面，使用渐变、阴影、动画等效果
+5. **响应式设计**：确保应用在各种设备上都能正常显示
+6. **错误处理**：包含适当的错误处理和用户反馈
+
+## 项目模板
+
+对于新项目，请使用以下技术栈：
+- Vite 作为构建工具
+- React 18 作为 UI 框架
+- TypeScript 作为开发语言
+- Tailwind CSS 作为样式框架
+- 使用 ES Modules
+
+## 文件结构示例
+
+\`\`\`
+project/
+├── index.html
+├── package.json
+├── vite.config.ts
+├── tsconfig.json
+├── tailwind.config.js
+├── postcss.config.js
+├── src/
+│   ├── main.tsx
+│   ├── App.tsx
+│   ├── index.css
+│   └── components/
+│       └── ...
+└── public/
+    └── ...
+\`\`\`
+
+请始终确保生成的代码可以直接运行。当用户发送截图时，仔细分析图片中的 UI 元素并精确实现。`;
+
+/**
+ * 创建 fetch 函数（支持代理）
+ */
+function createFetcher() {
+  if (PROXY_URL) {
+    console.log(`使用代理: ${PROXY_URL}`);
+    const dispatcher = new ProxyAgent(PROXY_URL);
+    return (url: string, options: RequestInit) => 
+      undiciFetch(url, { ...options, dispatcher } as Parameters<typeof undiciFetch>[1]);
+  }
+  return fetch;
+}
+
+const proxyFetch = createFetcher();
+
+/**
+ * 调用 Gemini API
+ */
+export async function callGemini(
+  messages: { role: "user" | "assistant"; content: string; imageData?: string }[],
+  projectContext?: { files: { path: string; content: string }[] }
+): Promise<{
+  success: boolean;
+  data?: {
+    thinking: string;
+    actions: AgentAction[];
+    message: string;
+    completed: boolean;
+    needsMoreInfo: boolean;
+  };
+  error?: string;
+  rawResponse?: string;
+}> {
+  if (!GEMINI_API_KEY) {
+    return {
+      success: false,
+      error: "未配置 GEMINI_API_KEY 环境变量",
+    };
+  }
+
+  try {
+    // 构建项目上下文
+    let contextText = "";
+    if (projectContext?.files && projectContext.files.length > 0) {
+      contextText = "\n\n## 当前项目文件\n\n";
+      for (const file of projectContext.files) {
+        contextText += `### ${file.path}\n\`\`\`\n${file.content}\n\`\`\`\n\n`;
+      }
+    }
+
+    // 转换消息格式
+    const geminiMessages: GeminiMessage[] = messages.map((msg) => {
+      const parts: GeminiPart[] = [];
+
+      // 添加文本内容
+      if (msg.content) {
+        parts.push({ text: msg.content });
+      }
+
+      // 添加图片（如果有）
+      if (msg.imageData) {
+        // imageData 格式: "data:image/png;base64,xxxxx"
+        const matches = msg.imageData.match(/^data:(.+);base64,(.+)$/);
+        if (matches) {
+          parts.push({
+            inlineData: {
+              mimeType: matches[1],
+              data: matches[2],
+            },
+          });
+        }
+      }
+
+      return {
+        role: msg.role === "assistant" ? "model" : "user",
+        parts,
+      };
+    });
+
+    // 构建请求
+    const request: GeminiRequest = {
+      contents: geminiMessages,
+      systemInstruction: {
+        parts: [{ text: AGENT_SYSTEM_PROMPT + contextText }],
+      },
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 65536,
+      },
+    };
+
+    // 发送请求
+    const response = await proxyFetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Gemini API Error:", errorText);
+      return {
+        success: false,
+        error: `API 请求失败: ${response.status} - ${errorText}`,
+      };
+    }
+
+    const data: GeminiResponse = await response.json();
+
+    if (data.error) {
+      return {
+        success: false,
+        error: `Gemini API 错误: ${data.error.message}`,
+      };
+    }
+
+    if (!data.candidates || data.candidates.length === 0) {
+      return {
+        success: false,
+        error: "未收到有效响应",
+      };
+    }
+
+    const responseText = data.candidates[0].content.parts
+      .map((p) => p.text)
+      .join("");
+
+    // 解析 JSON 响应
+    try {
+      // 尝试提取 JSON 块
+      const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/) ||
+        responseText.match(/```\s*([\s\S]*?)\s*```/) ||
+        [null, responseText];
+
+      const jsonText = jsonMatch[1] || responseText;
+      
+      // 清理可能的前后缀
+      const cleanedJson = jsonText.trim();
+      
+      const parsed = JSON.parse(cleanedJson);
+
+      return {
+        success: true,
+        data: {
+          thinking: parsed.thinking || "",
+          actions: parsed.actions || [],
+          message: parsed.message || "完成",
+          completed: parsed.completed ?? true,
+          needsMoreInfo: parsed.needsMoreInfo ?? false,
+        },
+        rawResponse: responseText,
+      };
+    } catch (parseError) {
+      console.error("JSON 解析错误:", parseError);
+      console.log("原始响应:", responseText);
+      
+      // 如果无法解析为 JSON，返回原始文本作为消息
+      return {
+        success: true,
+        data: {
+          thinking: "",
+          actions: [],
+          message: responseText,
+          completed: true,
+          needsMoreInfo: false,
+        },
+        rawResponse: responseText,
+      };
+    }
+  } catch (error) {
+    console.error("Gemini 调用错误:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "未知错误",
+    };
+  }
+}
+
+/**
+ * 流式调用 Gemini API（用于实时显示生成过程）
+ */
+export async function* streamGemini(
+  messages: { role: "user" | "assistant"; content: string; imageData?: string }[],
+  projectContext?: { files: { path: string; content: string }[] }
+): AsyncGenerator<{ type: "text" | "done"; content: string }> {
+  if (!GEMINI_API_KEY) {
+    yield { type: "done", content: "错误: 未配置 GEMINI_API_KEY" };
+    return;
+  }
+
+  try {
+    // 构建项目上下文
+    let contextText = "";
+    if (projectContext?.files && projectContext.files.length > 0) {
+      contextText = "\n\n## 当前项目文件\n\n";
+      for (const file of projectContext.files) {
+        contextText += `### ${file.path}\n\`\`\`\n${file.content}\n\`\`\`\n\n`;
+      }
+    }
+
+    // 转换消息格式
+    const geminiMessages: GeminiMessage[] = messages.map((msg) => {
+      const parts: GeminiPart[] = [];
+      if (msg.content) {
+        parts.push({ text: msg.content });
+      }
+      if (msg.imageData) {
+        const matches = msg.imageData.match(/^data:(.+);base64,(.+)$/);
+        if (matches) {
+          parts.push({
+            inlineData: {
+              mimeType: matches[1],
+              data: matches[2],
+            },
+          });
+        }
+      }
+      return {
+        role: msg.role === "assistant" ? "model" : "user",
+        parts,
+      };
+    });
+
+    const request: GeminiRequest = {
+      contents: geminiMessages,
+      systemInstruction: {
+        parts: [{ text: AGENT_SYSTEM_PROMPT + contextText }],
+      },
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 65536,
+      },
+    };
+
+    const streamUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?key=${GEMINI_API_KEY}&alt=sse`;
+
+    const response = await proxyFetch(streamUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok || !response.body) {
+      yield { type: "done", content: `API 错误: ${response.status}` };
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.candidates?.[0]?.content?.parts) {
+              for (const part of data.candidates[0].content.parts) {
+                if (part.text) {
+                  yield { type: "text", content: part.text };
+                }
+              }
+            }
+          } catch {
+            // 忽略解析错误
+          }
+        }
+      }
+    }
+
+    yield { type: "done", content: "" };
+  } catch (error) {
+    yield { type: "done", content: `错误: ${error instanceof Error ? error.message : "未知错误"}` };
+  }
+}

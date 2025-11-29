@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Sparkles, Plus, Menu, X } from "lucide-react";
+import { Sparkles, Plus, Menu, X, Zap } from "lucide-react";
 import { useState } from "react";
 import { ThemeToggle } from "../ui/theme-toggle";
 import { Button } from "../ui/button";
@@ -32,13 +32,13 @@ export function Header({ onNewChat }: HeaderProps) {
           whileHover={{ scale: 1.02 }}
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-lg 
-                          bg-gradient-to-br from-primary-500 to-accent-500 
-                          shadow-md shadow-primary-500/20">
-            <Sparkles className="h-4 w-4 text-white" />
+                          bg-gradient-to-br from-primary-500 via-accent-500 to-primary-600 
+                          shadow-md shadow-primary-500/30">
+            <Zap className="h-4 w-4 text-white" />
           </div>
           <div className="hidden sm:block">
             <h1 className="gradient-text text-base font-semibold tracking-tight">
-              Lovable Chat
+              AI App Builder
             </h1>
           </div>
         </motion.div>

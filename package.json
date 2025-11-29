@@ -1,36 +1,37 @@
 {
-  "name": "lovable-chat",
-  "version": "0.1.0",
+  "name": "ai-app-builder",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "export": "mv app/api app/_api_backup 2>/dev/null; NEXT_EXPORT=true NEXT_PUBLIC_STATIC_EXPORT=true next build; mv app/_api_backup app/api 2>/dev/null || true",
     "export:win": "move app\\api app\\_api_backup 2>nul & set NEXT_EXPORT=true && set NEXT_PUBLIC_STATIC_EXPORT=true && next build & move app\\_api_backup app\\api 2>nul",
-    "preview": "npx serve out"
+    "preview": "npx serve out",
+    "clean": "rm -rf .next out node_modules/.cache"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.11.17",
+    "lucide-react": "^0.460.0",
     "next": "15.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "framer-motion": "^11.11.17",
-    "lucide-react": "^0.460.0",
-    "clsx": "^2.1.1"
+    "undici": "^7.16.0"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0-beta.8",
     "@types/node": "^22.9.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "typescript": "^5.6.3",
-    "tailwindcss": "^4.0.0-beta.8",
-    "@tailwindcss/postcss": "^4.0.0-beta.8",
-    "postcss": "^8.4.49",
     "eslint": "^9.15.0",
     "eslint-config-next": "15.0.3",
+    "postcss": "^8.4.49",
     "prettier": "^3.3.3",
-    "prettier-plugin-tailwindcss": "^0.6.8"
+    "prettier-plugin-tailwindcss": "^0.6.8",
+    "tailwindcss": "^4.0.0-beta.8",
+    "typescript": "^5.6.3"
   }
 }
-
