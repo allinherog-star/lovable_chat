@@ -253,3 +253,90 @@ body {
   box-shadow: 0 0 0 3px oklch(0.60 0.20 265 / 0.4);
 }
 
+/* === 分栏布局过渡 === */
+.split-view-enter {
+  animation: split-slide-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes split-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* === 预览面板样式 === */
+.preview-panel {
+  background: linear-gradient(180deg, 
+    rgba(248, 250, 252, 0.95) 0%, 
+    rgba(241, 245, 249, 0.98) 100%
+  );
+}
+
+.dark .preview-panel {
+  background: linear-gradient(180deg, 
+    rgba(15, 23, 42, 0.95) 0%, 
+    rgba(30, 41, 59, 0.98) 100%
+  );
+}
+
+/* === 分隔线动画 === */
+.divider-glow {
+  position: relative;
+}
+
+.divider-glow::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -1px;
+  width: 2px;
+  height: 100%;
+  background: linear-gradient(180deg, 
+    transparent 0%, 
+    oklch(0.60 0.20 265 / 0.3) 50%, 
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.divider-glow:hover::after {
+  opacity: 1;
+}
+
+/* === 预览加载动画增强 === */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    oklch(0.95 0.01 270 / 0.5) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.dark .shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    oklch(0.3 0.02 270 / 0.3) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+}
+

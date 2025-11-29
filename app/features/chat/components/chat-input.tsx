@@ -56,7 +56,7 @@ export function ChatInput({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative mx-auto w-full max-w-3xl px-4 pb-6"
+      className="relative mx-auto w-full max-w-4xl px-4 pb-6"
     >
       <form onSubmit={handleSubmit} className="relative">
         {/* 输入框容器 */}
@@ -156,4 +156,3 @@ export function ChatInput({
     </motion.div>
   );
 }
-

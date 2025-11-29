@@ -40,7 +40,7 @@ export function ChatContainer({
         ref={containerRef}
         className="flex-1 overflow-y-auto overflow-x-hidden"
       >
-        <div className="mx-auto max-w-3xl">
+        <div className="mx-auto max-w-full px-3">
           <AnimatePresence mode="popLayout">
             {messages.map((message, index) => (
               <ChatMessage
@@ -146,4 +146,3 @@ function SuggestionCard({ text, delay = 0 }: SuggestionCardProps) {
     </motion.button>
   );
 }
-
