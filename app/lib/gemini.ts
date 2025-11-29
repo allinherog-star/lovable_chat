@@ -208,8 +208,17 @@ export async function callGemini(
   if (!GEMINI_API_KEY) {
     return {
       success: false,
-      error: "未配置 GEMINI_API_KEY 环境变量",
+      error: `未配置 GEMINI_API_KEY 环境变量 (检测到的环境变量: ${Object.keys(process.env).filter(k => k.includes('GEMINI')).join(', ') || '无'})`,
     };
+  }
+  
+  // 调试：检查密钥格式
+  const trimmedKey = GEMINI_API_KEY.trim();
+  if (trimmedKey !== GEMINI_API_KEY) {
+    console.warn("警告: GEMINI_API_KEY 包含前后空格");
+  }
+  if (trimmedKey.startsWith('"') || trimmedKey.startsWith("'")) {
+    console.warn("警告: GEMINI_API_KEY 可能包含引号");
   }
 
   try {
@@ -265,12 +274,18 @@ export async function callGemini(
       },
     };
 
+    // 使用 trim 后的密钥，避免空格问题
+    const apiKey = GEMINI_API_KEY.trim();
+    
+    // 调试日志（只在服务端打印）
+    console.log(`[Gemini] API Key 长度: ${apiKey.length}, 前缀: ${apiKey.substring(0, 5)}...`);
+    
     // 发送请求
     const response = await fetch(GEMINI_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY,
+        "x-goog-api-key": apiKey,
       },
       body: JSON.stringify(request),
     });
@@ -431,12 +446,15 @@ export async function* streamGemini(
     };
 
     const streamUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse`;
+    
+    // 使用 trim 后的密钥
+    const apiKey = GEMINI_API_KEY.trim();
 
     const response = await fetch(streamUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY,
+        "x-goog-api-key": apiKey,
       },
       body: JSON.stringify(request),
     });
