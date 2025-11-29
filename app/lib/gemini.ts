@@ -6,10 +6,8 @@
 import { AgentAction } from "./agent-types";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
-const GEMINI_MODEL = "gemini-2.5-pro-preview-05-06";
-// API URL - 使用函数生成以便传入 key 参数
-const getGeminiApiUrl = (apiKey: string) => 
-  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+const GEMINI_MODEL = "gemini-3-pro-preview";
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 /**
  * 修复 JSON 内容中的常见问题
@@ -282,11 +280,12 @@ export async function callGemini(
     // 调试日志（只在服务端打印）
     console.log(`[Gemini] API Key 长度: ${apiKey.length}, 前缀: ${apiKey.substring(0, 5)}...`);
     
-    // 发送请求 - 使用 URL 参数传递 API Key
-    const response = await fetch(getGeminiApiUrl(apiKey), {
+    // 发送请求 - 使用 header 传递 API Key
+    const response = await fetch(GEMINI_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
       },
       body: JSON.stringify(request),
     });
@@ -449,13 +448,14 @@ export async function* streamGemini(
     // 使用 trim 后的密钥
     const apiKey = GEMINI_API_KEY.trim();
     
-    // 使用 URL 参数传递 API Key
-    const streamUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?key=${apiKey}&alt=sse`;
+    // 使用 header 传递 API Key
+    const streamUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse`;
 
     const response = await fetch(streamUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
       },
       body: JSON.stringify(request),
     });
