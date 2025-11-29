@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import type { AgentMessage, Project, AgentChatResponse, OperationLog, StreamEvent, RequirementUnderstanding } from "@/app/lib/agent-types";
+import type { AgentMessage, Project, OperationLog, StreamEvent, RequirementUnderstanding } from "@/app/lib/agent-types";
 
 /** 生成唯一 ID */
 function generateId(): string {

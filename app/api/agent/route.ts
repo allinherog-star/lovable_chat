@@ -16,7 +16,7 @@ import {
   startDevServer,
   listProjects,
 } from "@/app/lib/project-manager";
-import type { AgentChatRequest, AgentChatResponse, AgentMessage, Project, StreamEvent } from "@/app/lib/agent-types";
+import type { AgentChatRequest, Project, StreamEvent } from "@/app/lib/agent-types";
 
 /**
  * 发送 SSE 事件
@@ -300,7 +300,7 @@ export async function POST(request: NextRequest): Promise<Response> {
                     data: { message: "🎉 作品已就绪!", progress: 100 }
                   });
                 }
-              } catch (error) {
+              } catch {
                 sendEvent(controller, {
                   type: "progress",
                   data: { message: "🔧 调整魔法参数...", progress: 88 }
@@ -325,7 +325,7 @@ export async function POST(request: NextRequest): Promise<Response> {
             });
 
             controller.close();
-          } catch (error) {
+          } catch {
             sendEvent(controller, {
               type: "error",
               data: { error: "魔法暂时失灵了，请稍后再试" }

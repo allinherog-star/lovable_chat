@@ -6,7 +6,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   loadProject,
-  updateProjectStatus,
   installDependencies,
   startDevServer,
   stopDevServer,

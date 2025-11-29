@@ -367,3 +367,70 @@ body {
   font-feature-settings: "liga" 0;
 }
 
+/* === 移动端优化 === */
+
+/* 安全区域支持 - iPhone X 及以上刘海屏 */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* 防止移动端输入框被键盘遮挡 */
+@supports (height: 100dvh) {
+  .h-screen {
+    height: 100dvh;
+  }
+}
+
+/* 移动端触摸优化 */
+@media (max-width: 767px) {
+  /* 增大触摸目标 */
+  button, 
+  [role="button"],
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* 防止双击缩放 */
+  * {
+    touch-action: manipulation;
+  }
+  
+  /* 移除 iOS 点击高亮 */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* 输入框字体至少 16px 防止 iOS 缩放 */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+  
+  /* 优化移动端滚动 */
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* 移动端底部安全区 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* 移动端键盘弹出时的处理 */
+@media (max-height: 500px) and (max-width: 767px) {
+  /* 键盘弹出时隐藏一些元素 */
+  .hide-on-keyboard {
+    display: none !important;
+  }
+}
+

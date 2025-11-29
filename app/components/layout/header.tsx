@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Sparkles, Plus, Menu, X, Zap } from "lucide-react";
+import { Plus, Menu, X, Zap } from "lucide-react";
 import { useState } from "react";
 import { ThemeToggle } from "../ui/theme-toggle";
 import { Button } from "../ui/button";

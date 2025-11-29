@@ -10,7 +10,6 @@ import {
   Tablet,
   Smartphone,
   Play,
-  Square,
   AlertCircle,
   CheckCircle,
   Loader,
@@ -82,7 +81,7 @@ export function ProjectPreviewPanel({
   };
 
   // 判断状态 - 使用 isGenerating prop 或 project.status
-  const isLoading = isGenerating || (project && ["creating", "generating", "installing", "building"].includes(project.status));
+  const isLoading = isGenerating || Boolean(project && ["creating", "generating", "installing", "building"].includes(project.status));
   const isRunning = !isGenerating && project?.status === "running" && project?.previewUrl;
   const hasError = !isGenerating && project?.status === "error";
 
@@ -98,11 +97,11 @@ export function ProjectPreviewPanel({
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
           className="flex h-full flex-col bg-white/50 backdrop-blur-sm dark:bg-slate-900/50"
         >
-          {/* 工具栏 */}
-          <div className="flex items-center justify-between border-b border-slate-200/60 bg-white/80 px-4 py-2.5 dark:border-slate-700/60 dark:bg-slate-800/80">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                实时预览
+          {/* 工具栏 - 移动端优化 */}
+          <div className="flex items-center justify-between border-b border-slate-200/60 bg-white/80 px-2 py-2 dark:border-slate-700/60 dark:bg-slate-800/80 sm:px-4 sm:py-2.5">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="text-xs font-medium text-slate-700 dark:text-slate-200 sm:text-sm">
+                预览
               </span>
 
               {/* 状态标签 */}
@@ -110,7 +109,7 @@ export function ProjectPreviewPanel({
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium
+                  className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-xs
                     ${status.color === "green" ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400" : ""}
                     ${status.color === "blue" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400" : ""}
                     ${status.color === "purple" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400" : ""}
@@ -122,14 +121,14 @@ export function ProjectPreviewPanel({
                   `}
                 >
                   {status.icon}
-                  <span>{status.label}</span>
+                  <span className="hidden xs:inline">{status.label}</span>
                 </motion.div>
               )}
             </div>
 
-            <div className="flex items-center gap-1">
-              {/* 设备切换 */}
-              <div className="mr-2 flex items-center gap-0.5 rounded-lg bg-slate-100 p-0.5 dark:bg-slate-700/50">
+            <div className="flex items-center gap-0.5 sm:gap-1">
+              {/* 设备切换 - 移动端隐藏 */}
+              <div className="mr-1 hidden items-center gap-0.5 rounded-lg bg-slate-100 p-0.5 dark:bg-slate-700/50 sm:mr-2 sm:flex">
                 <DeviceButton
                   icon={Monitor}
                   active={device === "desktop"}
@@ -159,7 +158,7 @@ export function ProjectPreviewPanel({
                   disabled={isLoading}
                   className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 
                              transition-colors hover:bg-slate-100 hover:text-slate-700 
-                             disabled:opacity-40 dark:text-slate-400 
+                             active:bg-slate-200 disabled:opacity-40 dark:text-slate-400 
                              dark:hover:bg-slate-700 dark:hover:text-slate-200"
                   title="重启预览"
                 >
@@ -175,7 +174,7 @@ export function ProjectPreviewPanel({
                 disabled={!isRunning}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 
                            transition-colors hover:bg-slate-100 hover:text-slate-700 
-                           disabled:opacity-40 dark:text-slate-400 
+                           active:bg-slate-200 disabled:opacity-40 dark:text-slate-400 
                            dark:hover:bg-slate-700 dark:hover:text-slate-200"
                 title="刷新预览"
               >
@@ -190,23 +189,23 @@ export function ProjectPreviewPanel({
                 disabled={!isRunning}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 
                            transition-colors hover:bg-slate-100 hover:text-slate-700 
-                           disabled:opacity-40 dark:text-slate-400 
+                           active:bg-slate-200 disabled:opacity-40 dark:text-slate-400 
                            dark:hover:bg-slate-700 dark:hover:text-slate-200"
                 title="在新窗口打开"
               >
                 <ExternalLink className="h-4 w-4" />
               </motion.button>
 
-              {/* 全屏按钮 */}
+              {/* 全屏按钮 - 移动端隐藏 */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => iframeRef.current?.requestFullscreen?.()}
                 disabled={!isRunning}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 
+                className="hidden h-8 w-8 items-center justify-center rounded-lg text-slate-500 
                            transition-colors hover:bg-slate-100 hover:text-slate-700 
                            disabled:opacity-40 dark:text-slate-400 
-                           dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                           dark:hover:bg-slate-700 dark:hover:text-slate-200 sm:flex"
                 title="全屏显示"
               >
                 <Maximize2 className="h-4 w-4" />
@@ -214,8 +213,8 @@ export function ProjectPreviewPanel({
             </div>
           </div>
 
-          {/* 预览区域 */}
-          <div className="relative flex-1 overflow-hidden bg-slate-100/50 dark:bg-slate-800/50">
+          {/* 预览区域 - 移动端底部留空间给导航栏 */}
+          <div className="relative flex-1 overflow-hidden bg-slate-100/50 pb-14 dark:bg-slate-800/50 md:pb-0">
             <AnimatePresence mode="wait">
               {!project || isLoading ? (
                 // 统一的等待页面 - AI 正在努力制作中
@@ -336,17 +335,18 @@ export function ProjectPreviewPanel({
             </AnimatePresence>
           </div>
 
-          {/* URL 地址栏 */}
+          {/* URL 地址栏 - 移动端需要留出底部导航栏空间 */}
           {isRunning && project?.previewUrl && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="border-t border-slate-200/60 bg-white/80 px-4 py-2 
-                         dark:border-slate-700/60 dark:bg-slate-800/80"
+              className="border-t border-slate-200/60 bg-white/80 px-2 pb-16 pt-2 
+                         dark:border-slate-700/60 dark:bg-slate-800/80
+                         sm:px-4 sm:py-2 md:pb-2"
             >
-              <div className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 dark:bg-slate-700/50">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                <span className="flex-1 truncate text-xs text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-2 rounded-lg bg-slate-100 px-2 py-1 dark:bg-slate-700/50 sm:px-3 sm:py-1.5">
+                <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+                <span className="flex-1 truncate text-[10px] text-slate-500 dark:text-slate-400 sm:text-xs">
                   {project.previewUrl}
                 </span>
               </div>

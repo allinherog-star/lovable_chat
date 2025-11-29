@@ -90,6 +90,7 @@ export function AgentChatMessage({ message, isLatest = false }: AgentChatMessage
         {/* 用户图片预览 */}
         {isUser && message.imageData && (
           <div className="mb-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={message.imageData}
               alt="用户上传的图片"
@@ -319,12 +320,12 @@ export function OperationLogPanel({ logs, progress, understanding }: MagicProgre
                 transition={{ delay: 0.2 }}
                 className="flex flex-wrap gap-1.5"
               >
-                {understanding.keywords.map((keyword, index) => (
+                {understanding.keywords.map((keyword, idx) => (
                   <motion.span
                     key={keyword}
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.1 * index }}
+                    transition={{ delay: 0.1 * idx }}
                     className="inline-flex items-center rounded-full bg-primary-100 
                                px-2 py-0.5 text-xs font-medium text-primary-700
                                dark:bg-primary-900/50 dark:text-primary-300"
@@ -370,7 +371,7 @@ export function OperationLogPanel({ logs, progress, understanding }: MagicProgre
 
       {/* 阶段指示器 */}
       <div className="flex items-center justify-between px-2">
-        {stages.map((stage, index) => (
+        {stages.map((stage) => (
           <div key={stage.name} className="flex flex-col items-center gap-1">
             <motion.div
               initial={{ scale: 0.8 }}

@@ -7,6 +7,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { exec, spawn, ChildProcess } from "child_process";
 import { promisify } from "util";
+import net from "net";
 import type { Project, FileInfo, CommandResult, BuildResult, AgentAction } from "./agent-types";
 
 const execAsync = promisify(exec);
@@ -42,7 +43,6 @@ function getPortFromProjectId(projectId: string): number {
  */
 async function isPortInUse(port: number): Promise<boolean> {
   return new Promise((resolve) => {
-    const net = require("net");
     const server = net.createServer();
     server.once("error", () => resolve(true)); // 端口被占用
     server.once("listening", () => {
