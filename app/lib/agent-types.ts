@@ -114,3 +114,48 @@ export interface AgentChatResponse {
   completed: boolean;
 }
 
+/** 操作日志条目 */
+export interface OperationLog {
+  id: string;
+  timestamp: Date;
+  type: "info" | "action" | "success" | "error" | "thinking" | "progress" | "understanding";
+  message: string;
+  detail?: string;
+}
+
+/** 需求理解信息 */
+export interface RequirementUnderstanding {
+  requirement?: string;   // 需求摘要
+  keywords?: string[];    // 识别的关键词
+  confirmed?: boolean;    // 是否确认理解完成
+}
+
+/** 流式事件类型 */
+export type StreamEventType = 
+  | "log"           // 操作日志
+  | "thinking"      // 思考过程
+  | "action"        // 执行操作
+  | "progress"      // 进度更新
+  | "understanding" // 需求理解
+  | "result"        // 最终结果
+  | "error";        // 错误
+
+/** 流式事件数据 */
+export interface StreamEvent {
+  type: StreamEventType;
+  data: {
+    message?: string;
+    detail?: string;
+    thinking?: string;
+    actions?: AgentAction[];
+    project?: Project;
+    progress?: number;  // 0-100
+    error?: string;
+    completed?: boolean;
+    // 需求理解相关
+    requirement?: string;
+    keywords?: string[];
+    confirmed?: boolean;
+  };
+}
+

@@ -4,12 +4,15 @@ import { useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AgentChatMessage, AgentTypingIndicator } from "./agent-message";
 import { ChatInputWithImage } from "./chat-input-with-image";
-import type { AgentMessage } from "@/app/lib/agent-types";
+import type { AgentMessage, OperationLog, RequirementUnderstanding } from "@/app/lib/agent-types";
 
 interface AgentContainerProps {
   messages: AgentMessage[];
   onSendMessage: (content: string, imageData?: string) => void;
   isLoading?: boolean;
+  operationLogs?: OperationLog[];
+  progress?: number;
+  understanding?: RequirementUnderstanding | null;
 }
 
 /**
@@ -19,6 +22,9 @@ export function AgentContainer({
   messages,
   onSendMessage,
   isLoading = false,
+  operationLogs = [],
+  progress = 0,
+  understanding = null,
 }: AgentContainerProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -52,7 +58,7 @@ export function AgentContainer({
 
           {/* 加载指示器 */}
           <AnimatePresence>
-            {isLoading && <AgentTypingIndicator />}
+            {isLoading && <AgentTypingIndicator logs={operationLogs} progress={progress} understanding={understanding} />}
           </AnimatePresence>
 
           {/* 滚动锚点 */}

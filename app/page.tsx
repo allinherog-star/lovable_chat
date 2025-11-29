@@ -23,6 +23,9 @@ export default function HomePage() {
     messages,
     isLoading,
     project,
+    operationLogs,
+    progress,
+    understanding,
     sendMessage,
     clearMessages,
     restartPreview,
@@ -76,6 +79,9 @@ export default function HomePage() {
                   messages={messages}
                   onSendMessage={sendMessage}
                   isLoading={isLoading}
+                  operationLogs={operationLogs}
+                  progress={progress}
+                  understanding={understanding}
                 />
               </motion.div>
 
@@ -96,6 +102,7 @@ export default function HomePage() {
                   project={project}
                   onRestart={restartPreview}
                   isVisible={true}
+                  isGenerating={isLoading}
                 />
               </motion.div>
             </motion.div>

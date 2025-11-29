@@ -25,6 +25,8 @@ interface ProjectPreviewPanelProps {
   project: Project | null;
   onRestart?: () => void;
   isVisible?: boolean;
+  /** 是否正在请求中（用于显示等待页面） */
+  isGenerating?: boolean;
 }
 
 const deviceSizes: Record<DeviceType, { width: string; maxWidth: number }> = {
@@ -54,6 +56,7 @@ export function ProjectPreviewPanel({
   project,
   onRestart,
   isVisible = true,
+  isGenerating = false,
 }: ProjectPreviewPanelProps) {
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [device, setDevice] = useState<DeviceType>("desktop");
@@ -78,10 +81,10 @@ export function ProjectPreviewPanel({
     }
   };
 
-  // 判断状态
-  const isLoading = project && ["creating", "generating", "installing", "building"].includes(project.status);
-  const isRunning = project?.status === "running" && project?.previewUrl;
-  const hasError = project?.status === "error";
+  // 判断状态 - 使用 isGenerating prop 或 project.status
+  const isLoading = isGenerating || (project && ["creating", "generating", "installing", "building"].includes(project.status));
+  const isRunning = !isGenerating && project?.status === "running" && project?.previewUrl;
+  const hasError = !isGenerating && project?.status === "error";
 
   const status = project ? statusConfig[project.status] : null;
 

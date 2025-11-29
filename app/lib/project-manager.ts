@@ -17,28 +17,112 @@ const PROJECTS_BASE_DIR = process.env.PROJECTS_DIR || path.join(process.cwd(), "
 // 存储运行中的项目进程
 const runningProcesses: Map<string, ChildProcess> = new Map();
 
-// 端口管理
-let nextPort = 5173;
-const usedPorts: Set<number> = new Set();
+// 端口管理 - 使用项目ID到端口的映射，确保每个项目使用固定端口
+const BASE_PORT = 5173;
+const PORT_RANGE = 100; // 100个端口循环利用
 
 /**
- * 获取下一个可用端口
+ * 根据项目 ID 计算固定端口号
+ * 使用简单哈希确保同一项目始终使用同一端口
  */
-function getNextPort(): number {
-  while (usedPorts.has(nextPort)) {
-    nextPort++;
+function getPortFromProjectId(projectId: string): number {
+  let hash = 0;
+  for (let i = 0; i < projectId.length; i++) {
+    const char = projectId.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
   }
-  const port = nextPort;
-  usedPorts.add(port);
-  nextPort++;
-  return port;
+  // 确保正数并映射到端口范围内
+  const portOffset = Math.abs(hash) % PORT_RANGE;
+  return BASE_PORT + portOffset;
 }
 
 /**
- * 释放端口
+ * 检查端口是否被占用
  */
-function releasePort(port: number): void {
-  usedPorts.delete(port);
+async function isPortInUse(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const net = require("net");
+    const server = net.createServer();
+    server.once("error", () => resolve(true)); // 端口被占用
+    server.once("listening", () => {
+      server.close();
+      resolve(false); // 端口可用
+    });
+    server.listen(port, "127.0.0.1");
+  });
+}
+
+/**
+ * 强制 kill 占用指定端口的进程
+ */
+async function killProcessOnPort(port: number): Promise<boolean> {
+  try {
+    // 先检查端口是否被占用
+    const inUse = await isPortInUse(port);
+    if (!inUse) {
+      return true; // 端口未被占用，无需 kill
+    }
+
+    // 使用 lsof 找出占用端口的进程 PID（macOS/Linux）
+    const { stdout } = await execAsync(`lsof -ti:${port} 2>/dev/null || true`);
+    const pids = stdout.trim().split("\n").filter(pid => pid);
+    
+    if (pids.length > 0) {
+      console.log(`端口 ${port} 被进程占用: ${pids.join(", ")}，正在 kill...`);
+      for (const pid of pids) {
+        try {
+          await execAsync(`kill -9 ${pid}`);
+          console.log(`已 kill 进程 ${pid}`);
+        } catch {
+          // 进程可能已经退出，忽略错误
+        }
+      }
+      // 等待进程完全退出
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return true;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error(`kill 端口 ${port} 失败:`, error);
+    return false;
+  }
+}
+
+/**
+ * 获取项目的端口（每个项目分配固定端口）
+ * 如果端口被占用，会先 kill 掉占用的进程
+ */
+async function getPortForProject(projectId: string): Promise<number> {
+  // 根据项目 ID 计算固定端口
+  const targetPort = getPortFromProjectId(projectId);
+  
+  // 尝试 kill 占用该端口的进程
+  await killProcessOnPort(targetPort);
+  
+  // 再次检查端口是否可用
+  const inUse = await isPortInUse(targetPort);
+  if (!inUse) {
+    return targetPort;
+  }
+  
+  // 如果还是被占用（可能是系统进程），尝试相邻端口
+  console.log(`端口 ${targetPort} 仍被占用，尝试相邻端口...`);
+  for (let i = 1; i < PORT_RANGE; i++) {
+    const alternatePort = BASE_PORT + ((targetPort - BASE_PORT + i) % PORT_RANGE);
+    await killProcessOnPort(alternatePort);
+    const altInUse = await isPortInUse(alternatePort);
+    if (!altInUse) {
+      console.log(`使用备用端口: ${alternatePort}`);
+      return alternatePort;
+    }
+  }
+  
+  // 所有端口都不可用，使用随机高端口
+  const randomPort = Math.floor(Math.random() * 10000) + 20000;
+  console.log(`所有端口都被占用，使用随机端口: ${randomPort}`);
+  return randomPort;
 }
 
 /**
@@ -301,7 +385,8 @@ export async function startDevServer(project: Project): Promise<BuildResult> {
   // 如果已有进程在运行，先停止
   await stopDevServer(project);
   
-  const port = getNextPort();
+  // 获取该项目专属的端口
+  const port = await getPortForProject(project.id);
   
   await updateProjectStatus(project, "running", { previewPort: port });
   
@@ -339,7 +424,6 @@ export async function startDevServer(project: Project): Promise<BuildResult> {
     child.on("error", (error) => {
       if (!resolved) {
         resolved = true;
-        releasePort(port);
         resolve({
           success: false,
           output,
@@ -350,7 +434,7 @@ export async function startDevServer(project: Project): Promise<BuildResult> {
     
     child.on("exit", (code) => {
       runningProcesses.delete(project.id);
-      releasePort(port);
+      // 端口基于项目ID计算，无需额外记录映射
       if (!resolved) {
         resolved = true;
         resolve({
@@ -384,10 +468,11 @@ export async function stopDevServer(project: Project): Promise<void> {
   if (child) {
     child.kill("SIGTERM");
     runningProcesses.delete(project.id);
-    
-    if (project.previewPort) {
-      releasePort(project.previewPort);
-    }
+  }
+  
+  // 如果有记录的端口，也 kill 掉占用该端口的进程
+  if (project.previewPort) {
+    await killProcessOnPort(project.previewPort);
   }
   
   await updateProjectStatus(project, "idle", { previewUrl: undefined, previewPort: undefined });
