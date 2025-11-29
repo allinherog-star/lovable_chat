@@ -4,12 +4,12 @@ import "./globals.css";
 
 /** 应用元数据 - SEO 优化 */
 export const metadata: Metadata = {
-  title: "Lovable Chat - AI 对话生成",
+  title: "Lovable Chat - 让AI释放你的每一个创意",
   description: "极简优雅的 AI 对话生成应用，让创意触手可及",
   keywords: ["AI", "对话", "生成", "聊天", "人工智能"],
   authors: [{ name: "Lovable Chat" }],
   openGraph: {
-    title: "Lovable Chat - AI 对话生成",
+    title: "Lovable Chat - 让AI释放你的每一个创意",
     description: "极简优雅的 AI 对话生成应用",
     type: "website",
   },
