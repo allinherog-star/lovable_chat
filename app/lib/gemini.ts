@@ -44,19 +44,14 @@ function fixJsonContent(jsonText: string): string {
   // 并修复其中的实际换行符
   for (let i = positions.length - 1; i >= 0; i--) {
     const startPos = positions[i];
-    let depth = 0;
-    let inString = true;
-    let endPos = startPos;
     
     for (let j = startPos; j < fixed.length; j++) {
       const char = fixed[j];
       const prevChar = j > 0 ? fixed[j - 1] : '';
       
+      // 找到结束引号就停止
       if (char === '"' && prevChar !== '\\') {
-        if (inString) {
-          endPos = j;
-          break;
-        }
+        break;
       }
       
       // 检查实际的换行符（不是 \n 字符串）
