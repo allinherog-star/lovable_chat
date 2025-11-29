@@ -108,29 +108,106 @@ export function PreviewLoader() {
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         />
         
-        {/* 星星装饰 */}
-        {[...Array(12)].map((_, i) => (
+        {/* 自由漂浮的思考星星 */}
+        {[...Array(18)].map((_, i) => {
+          // 为每颗星星生成独特的漂浮路径
+          const baseX = 5 + (i * 5.5) % 90;
+          const baseY = 5 + (i * 7.3) % 90;
+          const size = ['text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl'][i % 5];
+          const star = ['✦', '✧', '⋆', '✶', '✴', '❋'][i % 6];
+          
+          // 生成随机但确定性的漂浮路径
+          const driftX1 = ((i * 17) % 60) - 30;
+          const driftX2 = ((i * 23) % 80) - 40;
+          const driftX3 = ((i * 31) % 50) - 25;
+          const driftY1 = ((i * 19) % 50) - 25;
+          const driftY2 = ((i * 29) % 70) - 35;
+          const driftY3 = ((i * 37) % 40) - 20;
+          
+          return (
+            <motion.div
+              key={i}
+              className={`absolute ${size} text-slate-400/60 dark:text-slate-300/40`}
+              style={{
+                left: `${baseX}%`,
+                top: `${baseY}%`,
+                filter: i % 3 === 0 ? 'blur(0.5px)' : 'none',
+              }}
+              animate={{
+                x: [0, driftX1, driftX2, driftX3, 0],
+                y: [0, driftY1, driftY2, driftY3, 0],
+                opacity: [0.2, 0.6, 0.9, 0.5, 0.2],
+                scale: [0.6, 1, 1.3, 0.9, 0.6],
+                rotate: [0, 90, 180, 270, 360],
+              }}
+              transition={{
+                duration: 12 + (i % 8) * 2,
+                repeat: Infinity,
+                delay: i * 0.5,
+                ease: "easeInOut",
+              }}
+            >
+              {star}
+            </motion.div>
+          );
+        })}
+        
+        {/* 快速穿梭的灵感火花 */}
+        {[...Array(6)].map((_, i) => (
           <motion.div
-            key={i}
-            className="absolute text-xl"
+            key={`spark-${i}`}
+            className="absolute h-1 w-1 rounded-full bg-gradient-to-r from-primary-400 to-accent-400"
             style={{
-              left: `${10 + (i * 7) % 80}%`,
-              top: `${15 + (i * 11) % 70}%`,
+              left: `${(i * 16) % 100}%`,
+              top: `${(i * 20) % 100}%`,
             }}
             animate={{
-              opacity: [0.2, 0.8, 0.2],
-              scale: [0.8, 1.2, 0.8],
-              rotate: [0, 180, 360],
+              x: [0, 100 + i * 20, -50, 80, 0],
+              y: [0, -60 + i * 10, 40, -30, 0],
+              opacity: [0, 0.8, 1, 0.6, 0],
+              scale: [0.5, 1.5, 1, 2, 0.5],
             }}
             transition={{
-              duration: 3 + (i % 3),
+              duration: 8 + i * 1.5,
               repeat: Infinity,
-              delay: i * 0.3,
+              delay: i * 1.2,
+              ease: [0.4, 0, 0.2, 1],
             }}
-          >
-            ✦
-          </motion.div>
+          />
         ))}
+        
+        {/* 缓慢旋转的星座连线效果 */}
+        <motion.svg
+          className="absolute inset-0 h-full w-full opacity-10 dark:opacity-5"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 120, repeat: Infinity, ease: "linear" }}
+        >
+          <defs>
+            <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="rgb(139, 92, 246)" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="rgb(251, 146, 60)" stopOpacity="0.3" />
+            </linearGradient>
+          </defs>
+          {/* 星座连线 */}
+          <motion.path
+            d="M 10% 20% Q 30% 10%, 50% 25% T 90% 15%"
+            fill="none"
+            stroke="url(#lineGradient)"
+            strokeWidth="1"
+            strokeDasharray="5,5"
+            animate={{ strokeDashoffset: [0, 20] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+          />
+          <motion.path
+            d="M 5% 60% Q 25% 80%, 45% 55% T 85% 70%"
+            fill="none"
+            stroke="url(#lineGradient)"
+            strokeWidth="1"
+            strokeDasharray="5,5"
+            animate={{ strokeDashoffset: [0, -20] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+          />
+        </motion.svg>
       </div>
 
       {/* 主要内容 */}
