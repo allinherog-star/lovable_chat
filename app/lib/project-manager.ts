@@ -379,35 +379,65 @@ export async function buildProject(project: Project): Promise<BuildResult> {
 }
 
 /**
- * 获取预览 URL
- * 在生产环境中使用代理路由，在开发环境中使用 localhost
+ * 检查是否为生产环境（需要使用静态构建）
  */
-function getPreviewUrl(projectId: string, port: number): string {
-  // 检查是否在生产环境（Railway 等平台）
-  const isProduction = process.env.NODE_ENV === "production";
-  const railwayUrl = process.env.RAILWAY_PUBLIC_DOMAIN;
-  const vercelUrl = process.env.VERCEL_URL;
-  
-  if (isProduction) {
-    // 生产环境使用代理路由
-    if (railwayUrl) {
-      return `https://${railwayUrl}/api/preview/${projectId}`;
-    }
-    if (vercelUrl) {
-      return `https://${vercelUrl}/api/preview/${projectId}`;
-    }
-    // 使用相对路径，让前端自动使用当前域名
-    return `/api/preview/${projectId}`;
-  }
-  
-  // 开发环境使用 localhost
-  return `http://localhost:${port}`;
+function isProductionEnvironment(): boolean {
+  return process.env.NODE_ENV === "production" || 
+         !!process.env.RAILWAY_PUBLIC_DOMAIN ||
+         !!process.env.VERCEL_URL;
 }
 
 /**
- * 启动开发服务器
+ * 构建并准备静态文件服务（用于生产环境）
+ */
+export async function buildAndServeStatic(project: Project): Promise<BuildResult> {
+  await updateProjectStatus(project, "building");
+  
+  // 运行构建
+  const buildResult = await executeCommand(project, "npm run build");
+  
+  if (!buildResult.success) {
+    await updateProjectStatus(project, "error", { error: buildResult.error });
+    return {
+      success: false,
+      output: buildResult.output,
+      error: buildResult.error || "构建失败",
+    };
+  }
+  
+  // 生成预览 URL（使用静态文件代理路由）
+  const previewUrl = `/api/preview/${project.id}`;
+  
+  await updateProjectStatus(project, "running", { 
+    previewUrl,
+    previewPort: 0, // 标记为静态服务模式
+  });
+  
+  return {
+    success: true,
+    output: buildResult.output,
+    previewUrl,
+  };
+}
+
+/**
+ * 启动开发服务器或构建静态文件
+ * 在生产环境使用静态构建，开发环境使用 Vite dev server
  */
 export async function startDevServer(project: Project): Promise<BuildResult> {
+  // 生产环境使用静态构建
+  if (isProductionEnvironment()) {
+    return buildAndServeStatic(project);
+  }
+  
+  // 开发环境使用 Vite dev server
+  return startViteDevServer(project);
+}
+
+/**
+ * 启动 Vite 开发服务器（仅用于开发环境）
+ */
+async function startViteDevServer(project: Project): Promise<BuildResult> {
   // 如果已有进程在运行，先停止
   await stopDevServer(project);
   
@@ -417,8 +447,7 @@ export async function startDevServer(project: Project): Promise<BuildResult> {
   await updateProjectStatus(project, "running", { previewPort: port });
   
   return new Promise((resolve) => {
-    // 使用 --host 0.0.0.0 确保可以从外部访问（代理需要）
-    const child = spawn("npm", ["run", "dev", "--", "--port", port.toString(), "--host", "0.0.0.0"], {
+    const child = spawn("npm", ["run", "dev", "--", "--port", port.toString(), "--host"], {
       cwd: project.path,
       env: { ...process.env, CI: "true" },
       stdio: ["ignore", "pipe", "pipe"],
@@ -435,7 +464,7 @@ export async function startDevServer(project: Project): Promise<BuildResult> {
       // Vite 服务器启动后会输出 URL
       if (!resolved && (output.includes("Local:") || output.includes("localhost") || output.includes("Network:"))) {
         resolved = true;
-        const previewUrl = getPreviewUrl(project.id, port);
+        const previewUrl = `http://localhost:${port}`;
         updateProjectStatus(project, "running", { previewUrl, previewPort: port });
         resolve({
           success: true,
@@ -461,7 +490,6 @@ export async function startDevServer(project: Project): Promise<BuildResult> {
     
     child.on("exit", (code) => {
       runningProcesses.delete(project.id);
-      // 端口基于项目ID计算，无需额外记录映射
       if (!resolved) {
         resolved = true;
         resolve({
@@ -476,7 +504,7 @@ export async function startDevServer(project: Project): Promise<BuildResult> {
     setTimeout(() => {
       if (!resolved) {
         resolved = true;
-        const previewUrl = getPreviewUrl(project.id, port);
+        const previewUrl = `http://localhost:${port}`;
         resolve({
           success: true,
           output,
