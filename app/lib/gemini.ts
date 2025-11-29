@@ -6,8 +6,69 @@
 import { AgentAction } from "./agent-types";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
-const GEMINI_MODEL = "gemini-3-pro-preview";
+const GEMINI_MODEL = "gemini-2.5-pro-preview-05-06";
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
+/**
+ * 修复 JSON 内容中的常见问题
+ * 主要处理 content 字段中未正确转义的特殊字符
+ */
+function fixJsonContent(jsonText: string): string {
+  try {
+    // 首先尝试直接解析，如果成功就不需要修复
+    JSON.parse(jsonText);
+    return jsonText;
+  } catch {
+    // 解析失败，尝试修复
+  }
+
+  // 策略1: 修复 content 字段中的问题
+  // 找到所有 "content": "..." 模式并修复其中的特殊字符
+  let fixed = jsonText;
+  
+  // 修复未转义的反斜杠（但保留已转义的）
+  // 这个正则会匹配单独的反斜杠（不是 \n, \t, \\, \", 等转义序列的一部分）
+  fixed = fixed.replace(/\\(?![nrtbf\\"\/])/g, '\\\\');
+  
+  // 修复 content 字段中的实际换行符
+  // 首先找到 "content": " 开始的位置
+  const contentPattern = /"content"\s*:\s*"/g;
+  let match;
+  const positions: number[] = [];
+  
+  while ((match = contentPattern.exec(fixed)) !== null) {
+    positions.push(match.index + match[0].length);
+  }
+  
+  // 对于每个 content 字段的开始位置，找到对应的结束引号
+  // 并修复其中的实际换行符
+  for (let i = positions.length - 1; i >= 0; i--) {
+    const startPos = positions[i];
+    let depth = 0;
+    let inString = true;
+    let endPos = startPos;
+    
+    for (let j = startPos; j < fixed.length; j++) {
+      const char = fixed[j];
+      const prevChar = j > 0 ? fixed[j - 1] : '';
+      
+      if (char === '"' && prevChar !== '\\') {
+        if (inString) {
+          endPos = j;
+          break;
+        }
+      }
+      
+      // 检查实际的换行符（不是 \n 字符串）
+      if (char === '\n' && prevChar !== '\\') {
+        // 将实际换行符替换为 \\n
+        fixed = fixed.substring(0, j) + '\\n' + fixed.substring(j + 1);
+      }
+    }
+  }
+  
+  return fixed;
+}
 
 /** Gemini 消息格式 */
 interface GeminiMessage {
@@ -255,12 +316,16 @@ export async function callGemini(
         responseText.match(/```\s*([\s\S]*?)\s*```/) ||
         [null, responseText];
 
-      const jsonText = jsonMatch[1] || responseText;
+      let jsonText = jsonMatch[1] || responseText;
       
       // 清理可能的前后缀
-      const cleanedJson = jsonText.trim();
+      jsonText = jsonText.trim();
       
-      const parsed = JSON.parse(cleanedJson);
+      // 尝试修复常见的 JSON 问题
+      // 1. 修复 content 字段中未转义的换行符
+      jsonText = fixJsonContent(jsonText);
+      
+      const parsed = JSON.parse(jsonText);
 
       return {
         success: true,
@@ -275,18 +340,31 @@ export async function callGemini(
       };
     } catch (parseError) {
       console.error("JSON 解析错误:", parseError);
-      console.log("原始响应:", responseText);
+      console.log("原始响应:", responseText.substring(0, 500) + "...");
       
-      // 如果无法解析为 JSON，返回原始文本作为消息
+      // 尝试从原始响应中提取有用信息
+      const messageMatch = responseText.match(/"message"\s*:\s*"([^"]+)"/);
+      const thinkingMatch = responseText.match(/"thinking"\s*:\s*"([^"]+)"/);
+      
+      if (messageMatch) {
+        // 如果能提取到 message 字段，返回它
+        return {
+          success: true,
+          data: {
+            thinking: thinkingMatch ? thinkingMatch[1] : "",
+            actions: [],
+            message: messageMatch[1].replace(/\\n/g, '\n'),
+            completed: true,
+            needsMoreInfo: false,
+          },
+          rawResponse: responseText,
+        };
+      }
+      
+      // 如果实在解析不了，返回友好的错误消息
       return {
-        success: true,
-        data: {
-          thinking: "",
-          actions: [],
-          message: responseText,
-          completed: true,
-          needsMoreInfo: false,
-        },
+        success: false,
+        error: "AI 返回的格式有误，请重试",
         rawResponse: responseText,
       };
     }
