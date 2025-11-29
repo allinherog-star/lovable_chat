@@ -15,6 +15,40 @@ const magicMessages = [
   { emoji: "🌈", text: "添加最后的光彩..." },
 ];
 
+// 模拟真实的系统日志
+const FAKE_LOGS = [
+  "[INFO] Initializing AI model pipeline...",
+  "[GET] /api/v1/models/gemini-2.0 → 200 OK",
+  "✓ Loading tokenizer: vocab_size=256000",
+  "[DEBUG] Context window: 1M tokens allocated",
+  "→ Parsing user requirements...",
+  "[POST] /api/generate/stream → connected",
+  "✓ Module loaded: @react/jsx-runtime",
+  "[INFO] Building component tree...",
+  "→ Analyzing design patterns...",
+  "[DEBUG] Memory: 847MB / 4096MB",
+  "✓ CSS-in-JS engine initialized",
+  "[INFO] Applying Tailwind optimizations...",
+  "→ Resolving dependencies: 23 modules",
+  "[GET] /cdn/fonts/inter.woff2 → cached",
+  "✓ Layout engine: flexbox mode",
+  "[DEBUG] GPU acceleration: enabled",
+  "→ Generating responsive breakpoints...",
+  "[INFO] Code splitting: 4 chunks",
+  "✓ Tree shaking: removed 12KB",
+  "[POST] /api/preview/compile → queued",
+  "→ Processing JSX transforms...",
+  "[DEBUG] Hot reload: standby",
+  "✓ Static analysis: 0 warnings",
+  "[INFO] Minification: terser v5.x",
+  "→ Asset optimization: images, fonts",
+  "[GET] /api/health → 200 OK (3ms)",
+  "✓ Build cache: 98% hit rate",
+  "[DEBUG] Worker threads: 4 active",
+  "→ Streaming response chunks...",
+  "[INFO] Rendering preview frame...",
+];
+
 /**
  * 预览区域加载动画组件
  * AI正在努力制作中的等待画面
@@ -22,6 +56,7 @@ const magicMessages = [
 export function PreviewLoader() {
   const [messageIndex, setMessageIndex] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [currentLogIndex, setCurrentLogIndex] = useState(0);
 
   // 切换消息
   useEffect(() => {
@@ -37,6 +72,14 @@ export function PreviewLoader() {
       setElapsedTime((prev) => prev + 1);
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // 模拟真实日志滚动
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentLogIndex(prev => (prev + 1) % FAKE_LOGS.length);
+    }, 600 + Math.random() * 500); // 随机间隔，更真实
+    return () => clearInterval(interval);
   }, []);
 
   const currentMessage = magicMessages[messageIndex];
@@ -201,6 +244,25 @@ export function PreviewLoader() {
             </motion.div>
           </AnimatePresence>
         </div>
+
+        {/* 实时日志输出 - 给用户真实感 */}
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          transition={{ delay: 0.3 }}
+          className="mb-5 w-80 overflow-hidden rounded-lg bg-slate-900/95 px-4 py-3 font-mono shadow-xl"
+        >
+          <motion.div
+            key={currentLogIndex}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.15 }}
+            className="flex items-center gap-2 text-[11px] text-green-400/90"
+          >
+            <span className="animate-pulse text-green-500">▸</span>
+            <span className="truncate">{FAKE_LOGS[currentLogIndex]}</span>
+          </motion.div>
+        </motion.div>
 
         {/* 进度条 */}
         <div className="mb-4 h-2 w-64 overflow-hidden rounded-full bg-slate-200/60 dark:bg-slate-700/60">

@@ -38,8 +38,11 @@ export function Header({ onNewChat }: HeaderProps) {
           </div>
           <div className="hidden sm:block">
             <h1 className="gradient-text text-base font-semibold tracking-tight">
-              AI App Builder
+              Lovable Chat
             </h1>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400">
+              让AI释放你的每一个创意
+            </p>
           </div>
         </motion.div>
 

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AgentChatMessage, AgentTypingIndicator } from "./agent-message";
 import { ChatInputWithImage } from "./chat-input-with-image";
 import type { AgentMessage, OperationLog, RequirementUnderstanding } from "@/app/lib/agent-types";
+import { ListTodo, Palette, BarChart3, ShoppingBag } from "lucide-react";
 
 interface AgentContainerProps {
   messages: AgentMessage[];
@@ -80,10 +81,30 @@ export function AgentContainer({
 /** Agent 空状态组件 */
 export function AgentEmptyState() {
   const suggestions = [
-    { icon: "🚀", text: "创建一个现代化的 Todo 应用", desc: "带有动画和本地存储" },
-    { icon: "🎨", text: "设计一个个人作品集网站", desc: "响应式布局，暗色主题" },
-    { icon: "📊", text: "构建一个数据仪表板", desc: "图表展示，实时更新" },
-    { icon: "🛒", text: "开发一个电商产品页面", desc: "商品展示，购物车功能" },
+    { 
+      icon: ListTodo, 
+      text: "创建一个现代化的 Todo 应用", 
+      desc: "带有动画和本地存储",
+      color: "from-emerald-500 to-teal-500"
+    },
+    { 
+      icon: Palette, 
+      text: "设计一个个人作品集网站", 
+      desc: "响应式布局，暗色主题",
+      color: "from-violet-500 to-purple-500"
+    },
+    { 
+      icon: BarChart3, 
+      text: "构建一个数据仪表板", 
+      desc: "图表展示，实时更新",
+      color: "from-blue-500 to-cyan-500"
+    },
+    { 
+      icon: ShoppingBag, 
+      text: "开发一个电商产品页面", 
+      desc: "商品展示，购物车功能",
+      color: "from-orange-500 to-amber-500"
+    },
   ];
 
   return (
@@ -108,20 +129,20 @@ export function AgentEmptyState() {
           <span className="text-4xl">⚡</span>
         </div>
         <h1 className="gradient-text text-4xl font-bold tracking-tight md:text-5xl">
-          AI App Builder
+          Lovable Chat
         </h1>
-        <p className="mt-3 max-w-md text-slate-500 dark:text-slate-400">
-          描述你想要的应用，或者粘贴设计截图，AI 将帮你生成完整的代码并预览
+        <p className="mt-3 max-w-md text-lg text-slate-400 dark:text-slate-500">
+          让AI释放你的每一个创意
         </p>
       </motion.div>
 
       {/* 功能亮点 */}
       <div className="mb-8 flex flex-wrap justify-center gap-3">
         {[
-          { icon: "📝", label: "描述需求" },
-          { icon: "📸", label: "粘贴截图" },
-          { icon: "🔧", label: "自动生成" },
-          { icon: "👀", label: "实时预览" },
+          { icon: "💡", label: "描述需求" },
+          { icon: "🖼️", label: "粘贴截图" },
+          { icon: "✨", label: "自动生成" },
+          { icon: "👁️", label: "实时预览" },
         ].map((item, i) => (
           <motion.div
             key={item.label}
@@ -155,7 +176,9 @@ export function AgentEmptyState() {
                        dark:hover:border-primary-600"
           >
             <div className="flex items-start gap-3">
-              <span className="text-2xl">{suggestion.icon}</span>
+              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${suggestion.color} shadow-md`}>
+                <suggestion.icon className="h-5 w-5 text-white" strokeWidth={2} />
+              </div>
               <div>
                 <span
                   className="block font-medium text-slate-700 group-hover:text-primary-600 

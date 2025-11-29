@@ -217,28 +217,8 @@ export function ProjectPreviewPanel({
           {/* 预览区域 */}
           <div className="relative flex-1 overflow-hidden bg-slate-100/50 dark:bg-slate-800/50">
             <AnimatePresence mode="wait">
-              {!project ? (
-                // 无项目状态
-                <motion.div
-                  key="empty"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex h-full flex-col items-center justify-center text-center"
-                >
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl 
-                                  bg-slate-200/50 dark:bg-slate-700/50">
-                    <Monitor className="h-8 w-8 text-slate-400" />
-                  </div>
-                  <h3 className="text-lg font-medium text-slate-600 dark:text-slate-300">
-                    等待生成
-                  </h3>
-                  <p className="mt-2 max-w-sm text-sm text-slate-500 dark:text-slate-400">
-                    开始对话后，AI 将自动生成应用并在这里显示预览
-                  </p>
-                </motion.div>
-              ) : isLoading ? (
-                // 加载中
+              {!project || isLoading ? (
+                // 统一的等待页面 - AI 正在努力制作中
                 <motion.div
                   key="loader"
                   initial={{ opacity: 0 }}
