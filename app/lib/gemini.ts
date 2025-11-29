@@ -4,14 +4,10 @@
  */
 
 import { AgentAction } from "./agent-types";
-import { ProxyAgent, fetch as undiciFetch } from "undici";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
-const GEMINI_MODEL = "gemini-2.5-pro-preview-05-06";
+const GEMINI_MODEL = "gemini-3-pro-preview";
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-
-// 代理配置 - 支持环境变量 HTTPS_PROXY 或 HTTP_PROXY
-const PROXY_URL = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy || "";
 
 /** Gemini 消息格式 */
 interface GeminiMessage {
@@ -136,21 +132,6 @@ project/
 请始终确保生成的代码可以直接运行。当用户发送截图时，仔细分析图片中的 UI 元素并精确实现。`;
 
 /**
- * 创建 fetch 函数（支持代理）
- */
-function createFetcher() {
-  if (PROXY_URL) {
-    console.log(`使用代理: ${PROXY_URL}`);
-    const dispatcher = new ProxyAgent(PROXY_URL);
-    return (url: string, options: RequestInit) => 
-      undiciFetch(url, { ...options, dispatcher } as Parameters<typeof undiciFetch>[1]);
-  }
-  return fetch;
-}
-
-const proxyFetch = createFetcher();
-
-/**
  * 调用 Gemini API
  */
 export async function callGemini(
@@ -229,10 +210,11 @@ export async function callGemini(
     };
 
     // 发送请求
-    const response = await proxyFetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    const response = await fetch(GEMINI_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "x-goog-api-key": GEMINI_API_KEY,
       },
       body: JSON.stringify(request),
     });
@@ -375,12 +357,13 @@ export async function* streamGemini(
       },
     };
 
-    const streamUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?key=${GEMINI_API_KEY}&alt=sse`;
+    const streamUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse`;
 
-    const response = await proxyFetch(streamUrl, {
+    const response = await fetch(streamUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "x-goog-api-key": GEMINI_API_KEY,
       },
       body: JSON.stringify(request),
     });

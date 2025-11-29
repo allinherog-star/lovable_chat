@@ -15,7 +15,7 @@ import {
   Edit,
   Image
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { AgentMessage, AgentAction } from "@/app/lib/agent-types";
 
 interface AgentChatMessageProps {
@@ -265,6 +265,25 @@ export function AgentChatMessage({ message, isLatest = false }: AgentChatMessage
 
 /** 加载指示器 */
 export function AgentTypingIndicator() {
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  // 计时器
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setElapsedSeconds(s => s + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // 根据时间显示不同的提示
+  const getStatusMessage = () => {
+    if (elapsedSeconds < 10) return "正在分析需求...";
+    if (elapsedSeconds < 30) return "正在设计代码结构...";
+    if (elapsedSeconds < 60) return "正在编写代码...";
+    if (elapsedSeconds < 90) return "正在生成完整项目...（复杂项目需要较长时间）";
+    return "仍在处理中，请耐心等待...";
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -292,30 +311,41 @@ export function AgentTypingIndicator() {
           AI Agent
         </span>
         <div
-          className="flex items-center gap-2 rounded-2xl border border-slate-200/60 
+          className="flex flex-col gap-1 rounded-2xl border border-slate-200/60 
                      bg-white/90 px-4 py-3 shadow-sm 
                      dark:border-slate-600/50 dark:bg-slate-800/90"
         >
-          <div className="flex gap-1">
-            {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                className="h-2 w-2 rounded-full bg-primary-500"
-                animate={{
-                  y: [0, -6, 0],
-                  opacity: [0.5, 1, 0.5],
-                }}
-                transition={{
-                  duration: 0.8,
-                  repeat: Infinity,
-                  delay: i * 0.15,
-                }}
-              />
-            ))}
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1">
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="h-2 w-2 rounded-full bg-primary-500"
+                  animate={{
+                    y: [0, -6, 0],
+                    opacity: [0.5, 1, 0.5],
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    repeat: Infinity,
+                    delay: i * 0.15,
+                  }}
+                />
+              ))}
+            </div>
+            <span className="text-sm text-slate-500 dark:text-slate-400">
+              {getStatusMessage()}
+            </span>
           </div>
-          <span className="text-sm text-slate-500 dark:text-slate-400">
-            正在思考和编写代码...
-          </span>
+          {elapsedSeconds >= 5 && (
+            <motion.span 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-xs text-slate-400 dark:text-slate-500"
+            >
+              已用时 {elapsedSeconds} 秒
+            </motion.span>
+          )}
         </div>
       </div>
     </motion.div>
