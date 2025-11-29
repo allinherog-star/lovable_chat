@@ -179,12 +179,18 @@ export function useAgentChat(options: UseAgentChatOptions = {}): UseAgentChatRet
                   break;
               }
             } catch (e) {
-              // 忽略解析错误
-              if (e instanceof Error && e.message !== "发生错误" && !e.message.includes("AI")) {
-                console.warn("解析 SSE 事件失败:", e);
-              } else {
+              // 如果是我们主动抛出的错误，重新抛出
+              if (e instanceof Error && (
+                e.message.includes("API") || 
+                e.message.includes("GEMINI") ||
+                e.message.includes("服务") ||
+                e.message.includes("错误") ||
+                e.message.includes("失败")
+              )) {
                 throw e;
               }
+              // 否则是解析错误，忽略
+              console.warn("解析 SSE 事件失败:", e);
             }
           }
         }

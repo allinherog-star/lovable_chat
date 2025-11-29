@@ -208,7 +208,7 @@ export async function POST(request: NextRequest): Promise<Response> {
               await updateProjectStatus(project, "error", { error: geminiResult.error });
               sendEvent(controller, {
                 type: "error",
-                data: { error: "魔法遇到了一点小问题，请再试一次", project }
+                data: { error: geminiResult.error || "AI 服务暂时不可用，请稍后再试", project }
               });
               controller.close();
               return;
