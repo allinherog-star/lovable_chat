@@ -379,6 +379,32 @@ export async function buildProject(project: Project): Promise<BuildResult> {
 }
 
 /**
+ * 获取预览 URL
+ * 在生产环境中使用代理路由，在开发环境中使用 localhost
+ */
+function getPreviewUrl(projectId: string, port: number): string {
+  // 检查是否在生产环境（Railway 等平台）
+  const isProduction = process.env.NODE_ENV === "production";
+  const railwayUrl = process.env.RAILWAY_PUBLIC_DOMAIN;
+  const vercelUrl = process.env.VERCEL_URL;
+  
+  if (isProduction) {
+    // 生产环境使用代理路由
+    if (railwayUrl) {
+      return `https://${railwayUrl}/api/preview/${projectId}`;
+    }
+    if (vercelUrl) {
+      return `https://${vercelUrl}/api/preview/${projectId}`;
+    }
+    // 使用相对路径，让前端自动使用当前域名
+    return `/api/preview/${projectId}`;
+  }
+  
+  // 开发环境使用 localhost
+  return `http://localhost:${port}`;
+}
+
+/**
  * 启动开发服务器
  */
 export async function startDevServer(project: Project): Promise<BuildResult> {
@@ -391,7 +417,8 @@ export async function startDevServer(project: Project): Promise<BuildResult> {
   await updateProjectStatus(project, "running", { previewPort: port });
   
   return new Promise((resolve) => {
-    const child = spawn("npm", ["run", "dev", "--", "--port", port.toString(), "--host"], {
+    // 使用 --host 0.0.0.0 确保可以从外部访问（代理需要）
+    const child = spawn("npm", ["run", "dev", "--", "--port", port.toString(), "--host", "0.0.0.0"], {
       cwd: project.path,
       env: { ...process.env, CI: "true" },
       stdio: ["ignore", "pipe", "pipe"],
@@ -406,9 +433,9 @@ export async function startDevServer(project: Project): Promise<BuildResult> {
     const checkReady = (data: string) => {
       output += data;
       // Vite 服务器启动后会输出 URL
-      if (!resolved && (output.includes("Local:") || output.includes("localhost"))) {
+      if (!resolved && (output.includes("Local:") || output.includes("localhost") || output.includes("Network:"))) {
         resolved = true;
-        const previewUrl = `http://localhost:${port}`;
+        const previewUrl = getPreviewUrl(project.id, port);
         updateProjectStatus(project, "running", { previewUrl, previewPort: port });
         resolve({
           success: true,
@@ -449,7 +476,7 @@ export async function startDevServer(project: Project): Promise<BuildResult> {
     setTimeout(() => {
       if (!resolved) {
         resolved = true;
-        const previewUrl = `http://localhost:${port}`;
+        const previewUrl = getPreviewUrl(project.id, port);
         resolve({
           success: true,
           output,
